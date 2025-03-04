@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { FiWifi, FiShield, FiAlertTriangle, FiClock, FiMoreVertical, FiSearch } from 'react-icons/fi';
+import { FiWifi, FiAlertTriangle, FiClock, FiMoreVertical } from 'react-icons/fi';
 
 interface Device {
   id: string;
@@ -17,10 +17,9 @@ interface Device {
 
 interface DeviceListProps {
   devices: Device[];
-  onScan?: () => void;
 }
 
-export default function DeviceList({ devices, onScan }: DeviceListProps) {
+export default function DeviceList({ devices }: DeviceListProps) {
   const [filter, setFilter] = useState('all');
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showDeviceDetails, setShowDeviceDetails] = useState(false);

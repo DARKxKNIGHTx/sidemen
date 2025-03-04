@@ -57,7 +57,6 @@ async function getNetworkDevices(): Promise<Device[]> {
             
             const parts = line.trim().split(/\s+/);
             if (parts.length >= 5) {
-                const localAddr = parts[3].split('.').slice(0, -1).join('.');
                 const remoteAddr = parts[4].split('.').slice(0, -1).join('.');
                 
                 // Look up the MAC address for this IP
@@ -105,6 +104,7 @@ async function getNetworkDevices(): Promise<Device[]> {
                         type: 'interface',
                         manufacturer: 'Local',
                         risk: 'low',
+                        
                         interface: nameMatch[1]
                     });
                 }

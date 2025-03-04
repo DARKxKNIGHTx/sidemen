@@ -25,66 +25,19 @@ function calculateRate(current: number, previous: number, timeDiff: number): num
     return Math.min(mbps, 1000);
 }
 
-async function getConnectedDevices(): Promise<number> {
-    try {
-        // Get ARP table entries (Layer 2 devices)
-        const { stdout: arpOutput } = await execPromise('arp -a');
-        const arpDevices = new Set(
-            arpOutput
-                .split('\n')
-                .filter(line => line.includes('at')) // Filter valid entries
-                .map(line => {
-                    const match = line.match(/\(([^)]+)\) at ([^ ]+)/);
-                    return match ? match[2] : null; // Extract MAC addresses
-                })
-                .filter(Boolean)
-        );
-
-        // Get active network connections (Layer 3/4 devices)
-        const { stdout: netstatOutput } = await execPromise('netstat -an | grep ESTABLISHED');
-        const netstatIPs = new Set(
-            netstatOutput
-                .split('\n')
-                .filter(Boolean)
-                .map(line => {
-                    const parts = line.trim().split(/\s+/);
-                    const ipPort = parts[4]; // Remote address column
-                    return ipPort ? ipPort.split('.')[0] : null;
-                })
-                .filter(Boolean)
-        );
-
-        // Get all network interfaces
-        const { stdout: ifconfigOutput } = await execPromise('ifconfig | grep "inet " | grep -v 127.0.0.1');
-        const localNetworks = ifconfigOutput
-            .split('\n')
-            .filter(Boolean)
-            .map(line => line.trim().split(/\s+/)[1]);
-
-        // Combine unique devices from both sources
-        const totalDevices = new Set([...arpDevices, ...netstatIPs]);
-        
-        // Add 1 to include this device itself
-        return totalDevices.size + 1;
-    } catch (error) {
-        console.error('Error counting devices:', error);
-        return 0;
-    }
-}
-
 export async function GET() {
     try {
-        // Get network interface statistics
-        const { stdout: netstat } = await execPromise('netstat -i | grep -v Name');
-        
         // Get current bandwidth usage (only works on macOS)
         const { stdout: bandwidth } = await execPromise('netstat -I en0 -b | tail -n 1');
         
         // Get system uptime
         const { stdout: uptime } = await execPromise('uptime');
         
-        // Get connected devices count using improved method
-        const connectedDevices = await getConnectedDevices();
+        // Get connected devices count using arp
+        const { stdout: arpOutput } = await execPromise('arp -a | wc -l');
+        
+        // Parse the outputs
+        const connectedDevices = parseInt(arpOutput.trim());
         
         // Parse bandwidth with rate calculation
         const bandwidthParts = bandwidth.trim().split(/\s+/);
@@ -110,16 +63,13 @@ export async function GET() {
         const uptimeMatch = uptime.match(/up\s+(.*?),\s+\d+\s+user/);
         const uptimeStr = uptimeMatch ? uptimeMatch[1] : "unknown";
         
-        // Calculate uptime percentage (assuming system has been running since last reboot)
-        const uptimePercentage = 99.9;
-        
         return NextResponse.json({
             connectedDevices,
             activeThreats: 0,
             bandwidth: `${(inRate + outRate).toFixed(2)}`,
             bandwidthIn: `${inRate.toFixed(2)}\nMbps download`,
             bandwidthOut: `${outRate.toFixed(2)}\nMbps upload`,
-            uptime: `${uptimePercentage}%`,
+            uptime: `${99.9}%`,
             uptimeRaw: uptimeStr,
             status: "Secure",
             securityScore: 92

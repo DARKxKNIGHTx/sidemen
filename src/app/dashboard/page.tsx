@@ -8,7 +8,6 @@ import ThreatDetection from "../../components/dashboard/ThreatDetection";
 import SecurityMetrics from "../../components/dashboard/SecurityMetrics";
 import Header from "../../components/dashboard/Header";
 import Sidebar from "../../components/dashboard/Sidebar";
-import { FiRefreshCw } from "react-icons/fi";
 
 // Import the Device interface
 interface Device {
@@ -31,7 +30,6 @@ export default function Dashboard() {
   const [devices, setDevices] = useState(mockDevices);
   const [activeView, setActiveView] = useState("overview");
   const [isScanning, setIsScanning] = useState(false);
-  const [lastScanTime, setLastScanTime] = useState<string | null>(null);
   
   useEffect(() => {
     // Check if user is authenticated
@@ -52,33 +50,16 @@ export default function Dashboard() {
       
       if (response.ok) {
         setDevices(data.devices);
-        setLastScanTime(new Date().toLocaleString());
       } else {
         console.error('Failed to scan network:', data.error);
-        // You might want to show an error message to the user here
       }
     } catch (error) {
       console.error('Network scan failed:', error);
-      // You might want to show an error message to the user here
     } finally {
       setIsScanning(false);
       window.dispatchEvent(new Event('scan-end'));
       window.dispatchEvent(new Event('network-scan'));
     }
-  };
-  
-  // Helper function for generating realistic device data
-  const generateRandomMAC = () => {
-    const hexDigits = "0123456789ABCDEF";
-    let mac = "";
-    for (let i = 0; i < 6; i++) {
-      let segment = "";
-      for (let j = 0; j < 2; j++) {
-        segment += hexDigits.charAt(Math.floor(Math.random() * 16));
-      }
-      mac += (i === 0 ? "" : ":") + segment;
-    }
-    return mac;
   };
 
   const handleLogout = () => {
@@ -112,7 +93,7 @@ export default function Dashboard() {
             <SecurityMetrics />
           </div>
           
-          <DeviceList devices={devices} onScan={scanNetwork} />
+          <DeviceList devices={devices} />
         </main>
       </div>
     </div>

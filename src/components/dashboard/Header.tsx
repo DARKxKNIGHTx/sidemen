@@ -9,9 +9,17 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
+
 export default function Header({ onScan, isScanning, onLogout }: HeaderProps) {
   const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState([
+  const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
       title: 'Security Alert',
@@ -39,6 +47,10 @@ export default function Header({ onScan, isScanning, onLogout }: HeaderProps) {
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle('dark');
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -92,7 +104,12 @@ export default function Header({ onScan, isScanning, onLogout }: HeaderProps) {
             <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
               <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h3 className="font-medium text-gray-800 dark:text-gray-200">Notifications</h3>
-                <button className="text-sm text-blue-500 hover:text-blue-600">Mark all as read</button>
+                <button 
+                  onClick={markAllAsRead}
+                  className="text-sm text-blue-500 hover:text-blue-600"
+                >
+                  Mark all as read
+                </button>
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {notifications.map(notification => (
