@@ -1,0 +1,120 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import DeviceList from "../../components/dashboard/DeviceList";
+import NetworkStatus from "../../components/dashboard/NetworkStatus";
+import ThreatDetection from "../../components/dashboard/ThreatDetection";
+import SecurityMetrics from "../../components/dashboard/SecurityMetrics";
+import Header from "../../components/dashboard/Header";
+import Sidebar from "../../components/dashboard/Sidebar";
+import { FiRefreshCw } from "react-icons/fi";
+
+// Import the Device interface
+interface Device {
+  id: string;
+  name: string;
+  ip: string;
+  mac: string;
+  status: string;
+  lastActive: string;
+  type: string;
+  manufacturer: string;
+  risk: string;
+}
+
+// Start with empty devices
+const mockDevices: Device[] = [];
+
+export default function Dashboard() {
+  const router = useRouter();
+  const [devices, setDevices] = useState(mockDevices);
+  const [activeView, setActiveView] = useState("overview");
+  const [isScanning, setIsScanning] = useState(false);
+  const [lastScanTime, setLastScanTime] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Check if user is authenticated
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    if (!isAuthenticated) {
+      router.push('/');
+    }
+  }, [router]);
+  
+  // Function to perform actual network scanning
+  const scanNetwork = async () => {
+    setIsScanning(true);
+    window.dispatchEvent(new Event('scan-start'));
+    
+    try {
+      const response = await fetch('/api/network/scan');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setDevices(data.devices);
+        setLastScanTime(new Date().toLocaleString());
+      } else {
+        console.error('Failed to scan network:', data.error);
+        // You might want to show an error message to the user here
+      }
+    } catch (error) {
+      console.error('Network scan failed:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsScanning(false);
+      window.dispatchEvent(new Event('scan-end'));
+      window.dispatchEvent(new Event('network-scan'));
+    }
+  };
+  
+  // Helper function for generating realistic device data
+  const generateRandomMAC = () => {
+    const hexDigits = "0123456789ABCDEF";
+    let mac = "";
+    for (let i = 0; i < 6; i++) {
+      let segment = "";
+      for (let j = 0; j < 2; j++) {
+        segment += hexDigits.charAt(Math.floor(Math.random() * 16));
+      }
+      mac += (i === 0 ? "" : ":") + segment;
+    }
+    return mac;
+  };
+
+  const handleLogout = () => {
+    // Clear localStorage
+    localStorage.removeItem('isAuthenticated');
+    
+    // Clear the authentication cookie
+    document.cookie = 'isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+    
+    // Redirect to login page
+    router.push('/');
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+      <Sidebar activeView={activeView} setActiveView={setActiveView} />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header onScan={scanNetwork} isScanning={isScanning} onLogout={handleLogout} />
+        
+        <main className="flex-1 overflow-y-auto p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+              Sidemen Security Dashboard
+            </h1>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <NetworkStatus />
+            <ThreatDetection devices={devices} />
+            <SecurityMetrics />
+          </div>
+          
+          <DeviceList devices={devices} onScan={scanNetwork} />
+        </main>
+      </div>
+    </div>
+  );
+} 
