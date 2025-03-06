@@ -31,7 +31,7 @@ export default function Login() {
       setError('');
 
       // In a real application, validate credentials against your backend
-      if (email === '2022cs0878@svce.ac.in' && password === 'admin') {
+      if (email === 'svceadmin' && password === 'password') {
         // Store email for future use
         localStorage.setItem('userEmail', email);
         
@@ -47,7 +47,7 @@ export default function Login() {
           setShowTwoFactorSetup(true);
         }
       } else {
-        setError('Invalid email or password');
+        setError('Invalid username or password');
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
@@ -124,15 +124,16 @@ export default function Login() {
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
+              Username
             </label>
             <input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Enter username"
             />
           </div>
 

@@ -57,9 +57,16 @@ export default function Dashboard() {
     try {
       const response = await fetch('/api/network/scan');
       const data = await response.json();
-      //pew pew pew
+      
       if (response.ok) {
-        setDevices(data.devices);
+        // Merge scanned devices with the dummy device
+        const newDevices = [...mockDevices];
+        data.devices.forEach((device: Device) => {
+          if (!newDevices.some(d => d.id === device.id)) {
+            newDevices.push(device);
+          }
+        });
+        setDevices(newDevices);
       } else {
         console.error('Failed to scan network:', data.error);
       }
