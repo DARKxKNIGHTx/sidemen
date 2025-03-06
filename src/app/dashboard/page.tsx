@@ -57,7 +57,7 @@ export default function Dashboard() {
     try {
       const response = await fetch('/api/network/scan');
       const data = await response.json();
-      
+      //pew pew pew
       if (response.ok) {
         setDevices(data.devices);
       } else {
