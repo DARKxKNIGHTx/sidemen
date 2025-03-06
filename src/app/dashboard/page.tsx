@@ -22,8 +22,18 @@ interface Device {
   risk: string;
 }
 
-// Start with empty devices
-const mockDevices: Device[] = [];
+// Start with a dummy device for demonstration
+const mockDevices: Device[] = [{
+  id: "dev-00e04c680001",
+  name: "MacBook Pro",
+  ip: "192.168.1.105",
+  mac: "00:E0:4C:68:00:01",
+  status: "normal",
+  lastActive: new Date().toISOString(),
+  type: "Computer",
+  manufacturer: "Apple Inc.",
+  risk: "low"
+}];
 
 export default function Dashboard() {
   const router = useRouter();

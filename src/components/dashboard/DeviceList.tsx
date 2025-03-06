@@ -24,10 +24,12 @@ export default function DeviceList({ devices }: DeviceListProps) {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showDeviceDetails, setShowDeviceDetails] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [localDevices, setLocalDevices] = useState(devices);
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    setLocalDevices(devices);
+  }, [devices]);
 
   const updateDeviceStatus = async (deviceId: string, status: string, risk: string) => {
     try {
@@ -42,8 +44,20 @@ export default function DeviceList({ devices }: DeviceListProps) {
       if (!response.ok) {
         throw new Error('Failed to update device status');
       }
+
+      const data = await response.json();
+      
+      // Update the local devices state with the updated device
+      setLocalDevices(prevDevices => 
+        prevDevices.map(device => 
+          device.id === deviceId ? { ...device, status, risk } : device
+        )
+      );
+
+      return data.device;
     } catch (error) {
       console.error('Error updating device:', error);
+      throw error;
     }
   };
 
@@ -81,19 +95,27 @@ export default function DeviceList({ devices }: DeviceListProps) {
   };
 
   const handleSetCritical = async (device: Device) => {
-    // Update device status to critical and risk to high
-    await updateDeviceStatus(device.id, 'critical', 'high');
-    
-    // Send security alert
-    await sendSecurityAlert(device);
-    
-    // Close device details modal if open
-    setShowDeviceDetails(false);
+    try {
+      // Update device status to critical and risk to high
+      const updatedDevice = await updateDeviceStatus(device.id, 'critical', 'high');
+      
+      // Send security alert
+      await sendSecurityAlert(updatedDevice);
+      
+      // Update selected device with new status
+      setSelectedDevice(updatedDevice);
+      
+      // Close device details modal if open
+      setShowDeviceDetails(false);
+    } catch (error) {
+      console.error('Error setting critical status:', error);
+      alert('Failed to update device status. Please try again.');
+    }
   };
 
   const filteredDevices = filter === 'all' 
-    ? devices 
-    : devices.filter(device => device.status === filter);
+    ? localDevices 
+    : localDevices.filter(device => device.status === filter);
 
   const handleDeviceClick = (device: Device) => {
     setSelectedDevice(device);
