@@ -22,14 +22,17 @@ export async function POST(request: Request) {
     // Update device status and risk level
     const device = devices.get(deviceId);
     if (device) {
-      device.status = status;
-      device.risk = risk;
-      device.lastActive = new Date().toISOString();
-      devices.set(deviceId, device);
+      const updatedDevice = {
+        ...device,
+        status,
+        risk,
+        lastActive: new Date().toISOString()
+      };
+      devices.set(deviceId, updatedDevice);
 
       return NextResponse.json({ 
         success: true,
-        device: device // Return updated device data
+        device: updatedDevice
       });
     } else {
       return NextResponse.json(
