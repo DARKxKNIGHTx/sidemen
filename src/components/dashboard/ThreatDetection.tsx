@@ -94,7 +94,7 @@ export default function ThreatDetection({ devices }: ThreatDetectionProps) {
             <FiShield className="text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Last Attack</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Last Scan</p>
             <p className="font-semibold text-gray-800 dark:text-white">{threatData.lastAttackTime}</p>
           </div>
         </div>
