@@ -29,6 +29,68 @@ export default function DeviceList({ devices }: DeviceListProps) {
     setIsClient(true);
   }, []);
 
+  const updateDeviceStatus = async (deviceId: string, status: string, risk: string) => {
+    try {
+      const response = await fetch('/api/devices/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deviceId, status, risk }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update device status');
+      }
+    } catch (error) {
+      console.error('Error updating device:', error);
+    }
+  };
+
+  const sendSecurityAlert = async (device: Device) => {
+    try {
+      const response = await fetch('/api/alert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deviceName: device.name,
+          deviceIP: device.ip,
+          deviceMAC: device.mac,
+          userEmail: '2022cs0878@svce.ac.in'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send security alert');
+      }
+
+      const data = await response.json();
+      
+      // Open the preview URL in a new tab
+      if (data.previewUrl) {
+        window.open(data.previewUrl, '_blank');
+      }
+
+      alert('Security alert sent successfully! Check the preview URL that opened in a new tab.');
+    } catch (error) {
+      console.error('Error sending alert:', error);
+      alert('Failed to send security alert. Please try again.');
+    }
+  };
+
+  const handleSetCritical = async (device: Device) => {
+    // Update device status to critical and risk to high
+    await updateDeviceStatus(device.id, 'critical', 'high');
+    
+    // Send security alert
+    await sendSecurityAlert(device);
+    
+    // Close device details modal if open
+    setShowDeviceDetails(false);
+  };
+
   const filteredDevices = filter === 'all' 
     ? devices 
     : devices.filter(device => device.status === filter);
@@ -268,14 +330,17 @@ export default function DeviceList({ devices }: DeviceListProps) {
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Actions</h4>
                 <div className="flex space-x-2">
+                  <button 
+                    onClick={() => handleSetCritical(selectedDevice)}
+                    className="px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
+                  >
+                    Set Critical Risk
+                  </button>
                   <button className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
                     Isolate Device
                   </button>
                   <button className="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
                     Run Security Scan
-                  </button>
-                  <button className="px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
-                    Update Firmware
                   </button>
                 </div>
               </div>
