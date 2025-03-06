@@ -78,9 +78,6 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    // Get the email from localStorage before clearing
-    const email = localStorage.getItem('userEmail');
-    
     // Clear only authentication status, keep 2FA secret
     localStorage.removeItem('isAuthenticated');
     
