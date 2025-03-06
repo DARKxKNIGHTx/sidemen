@@ -31,28 +31,44 @@ export default function DeviceList({ devices }: DeviceListProps) {
     setLocalDevices(devices);
   }, [devices]);
 
-  const updateDeviceStatus = async (deviceId: string, status: string, risk: string) => {
+  const updateDeviceStatus = async (deviceId: string, status: string, risk: string, device: Device) => {
     try {
+      console.log('Updating device status:', { deviceId, status, risk, device });
+      
       const response = await fetch('/api/devices/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ deviceId, status, risk }),
+        body: JSON.stringify({ 
+          deviceId, 
+          status, 
+          risk,
+          device // Send the full device data
+        }),
       });
 
+      const data = await response.json();
+      console.log('Update response:', data);
+
       if (!response.ok) {
-        throw new Error('Failed to update device status');
+        console.error('Update failed:', data);
+        throw new Error(data.details || data.error || 'Failed to update device status');
+      }
+      
+      if (!data.device) {
+        console.error('No device data in response:', data);
+        throw new Error('Invalid server response: missing device data');
       }
 
-      const data = await response.json();
-      
       // Update the local devices state with the updated device
-      setLocalDevices(prevDevices => 
-        prevDevices.map(device => 
-          device.id === deviceId ? { ...device, status, risk } : device
-        )
-      );
+      setLocalDevices(prevDevices => {
+        const newDevices = prevDevices.map(dev => 
+          dev.id === deviceId ? { ...data.device } : dev
+        );
+        console.log('Updated local devices:', newDevices);
+        return newDevices;
+      });
 
       return data.device;
     } catch (error) {
@@ -63,6 +79,8 @@ export default function DeviceList({ devices }: DeviceListProps) {
 
   const sendSecurityAlert = async (device: Device) => {
     try {
+      console.log('Sending security alert for device:', device);
+      
       const response = await fetch('/api/alert', {
         method: 'POST',
         headers: {
@@ -76,40 +94,46 @@ export default function DeviceList({ devices }: DeviceListProps) {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send security alert');
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || 'Failed to send security alert');
+      }
       
       // Open the preview URL in a new tab
       if (data.previewUrl) {
         window.open(data.previewUrl, '_blank');
+        alert('Security alert sent successfully! Check the preview URL that opened in a new tab.');
+      } else {
+        alert('Security alert sent successfully!');
       }
-
-      alert('Security alert sent successfully! Check the preview URL that opened in a new tab.');
     } catch (error) {
       console.error('Error sending alert:', error);
-      alert('Failed to send security alert. Please try again.');
+      throw error;
     }
   };
 
   const handleSetCritical = async (device: Device) => {
     try {
-      // Update device status to critical and risk to high
-      const updatedDevice = await updateDeviceStatus(device.id, 'critical', 'high');
+      console.log('Setting device to critical:', device);
       
-      // Send security alert
-      await sendSecurityAlert(updatedDevice);
+      // Update device status to critical and risk to high
+      const updatedDevice = await updateDeviceStatus(device.id, 'critical', 'high', device);
+      console.log('Device updated successfully:', updatedDevice);
       
       // Update selected device with new status
       setSelectedDevice(updatedDevice);
+      
+      // Send security alert
+      await sendSecurityAlert(updatedDevice);
+      console.log('Security alert sent successfully');
       
       // Close device details modal if open
       setShowDeviceDetails(false);
     } catch (error) {
       console.error('Error setting critical status:', error);
-      alert('Failed to update device status. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update device status. Please try again.';
+      alert(errorMessage);
     }
   };
 

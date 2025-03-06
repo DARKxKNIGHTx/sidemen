@@ -9,12 +9,29 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: 'yh3g7wbeaco3yvwn@ethereal.email',
     pass: 'yRJkgS6G6mYUEAc7qT'
+  },
+  debug: true // Enable debug logs
+});
+
+// Verify transporter configuration
+transporter.verify(function(error, success) {
+  if (error) {
+    console.error('SMTP Configuration Error:', error);
+  } else {
+    console.log('SMTP Server is ready to send messages');
   }
 });
 
 export async function POST(request: Request) {
   try {
     const { deviceName, deviceIP, deviceMAC, userEmail } = await request.json();
+    
+    console.log('Attempting to send email with details:', {
+      deviceName,
+      deviceIP,
+      deviceMAC,
+      userEmail
+    });
 
     // Send email
     const info = await transporter.sendMail({
@@ -49,11 +66,33 @@ export async function POST(request: Request) {
             This is an automated message from Sidemen Security. Please do not reply to this email.
           </p>
         </div>
+      `,
+      text: `
+        Security Alert
+        
+        Suspicious activity has been detected on your network.
+        
+        Device Details:
+        - Device Name: ${deviceName}
+        - IP Address: ${deviceIP}
+        - MAC Address: ${deviceMAC}
+        
+        This device has been flagged for suspicious activity and requires immediate attention.
+        
+        Recommended Actions:
+        1. Isolate the device from your network
+        2. Run a security scan
+        3. Check for unauthorized access
+        4. Update device firmware if available
+        
+        This is an automated message from Sidemen Security. Please do not reply to this email.
       `
     });
 
-    // Log the preview URL for testing
-    console.log('Preview URL: ' + nodemailer.getTestMessageUrl(info));
+    console.log('Email sent successfully:', {
+      messageId: info.messageId,
+      previewUrl: nodemailer.getTestMessageUrl(info)
+    });
 
     return NextResponse.json({ 
       success: true, 
@@ -61,9 +100,12 @@ export async function POST(request: Request) {
       previewUrl: nodemailer.getTestMessageUrl(info)
     });
   } catch (error) {
-    console.error('Error sending alert:', error);
+    console.error('Detailed error sending alert:', error);
     return NextResponse.json(
-      { error: 'Failed to send security alert' },
+      { 
+        error: 'Failed to send security alert',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

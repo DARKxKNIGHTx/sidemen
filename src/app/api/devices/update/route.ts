@@ -1,49 +1,73 @@
 import { NextResponse } from 'next/server';
 
-// Initialize with our dummy device
-const devices = new Map([
-  ["dev-00e04c680001", {
-    id: "dev-00e04c680001",
-    name: "MacBook Pro",
-    ip: "192.168.1.105",
-    mac: "00:E0:4C:68:00:01",
-    status: "normal",
-    lastActive: new Date().toISOString(),
-    type: "Computer",
-    manufacturer: "Apple Inc.",
-    risk: "low"
-  }]
-]);
+interface Device {
+  id: string;
+  name: string;
+  ip: string;
+  mac: string;
+  status: string;
+  lastActive: string;
+  type: string;
+  manufacturer: string;
+  risk: string;
+}
+
+// Initial dummy device data
+const initialDevice: Device = {
+  id: "dev-00e04c680001",
+  name: "MacBook Pro",
+  ip: "192.168.1.105",
+  mac: "00:E0:4C:68:00:01",
+  status: "normal",
+  lastActive: new Date().toISOString(),
+  type: "Computer",
+  manufacturer: "Apple Inc.",
+  risk: "low"
+};
 
 export async function POST(request: Request) {
   try {
-    const { deviceId, status, risk } = await request.json();
+    console.log('Received update request');
+    const { deviceId, status, risk, device: inputDevice } = await request.json();
+    console.log('Update params:', { deviceId, status, risk, inputDevice });
 
-    // Update device status and risk level
-    const device = devices.get(deviceId);
-    if (device) {
-      const updatedDevice = {
-        ...device,
-        status,
-        risk,
-        lastActive: new Date().toISOString()
-      };
-      devices.set(deviceId, updatedDevice);
+    let baseDevice: Device;
 
-      return NextResponse.json({ 
-        success: true,
-        device: updatedDevice
-      });
+    // Check if this is the dummy device or a scanned device
+    if (deviceId === initialDevice.id) {
+      baseDevice = initialDevice;
+    } else if (inputDevice) {
+      // For scanned devices, use the provided device data
+      baseDevice = inputDevice;
     } else {
+      console.error('Device not found and no device data provided:', deviceId);
       return NextResponse.json(
         { error: 'Device not found' },
         { status: 404 }
       );
     }
+
+    // Create updated device
+    const updatedDevice: Device = {
+      ...baseDevice,
+      status,
+      risk,
+      lastActive: new Date().toISOString()
+    };
+
+    console.log('Updated device:', updatedDevice);
+
+    return NextResponse.json({ 
+      success: true,
+      device: updatedDevice
+    });
   } catch (error) {
-    console.error('Error updating device:', error);
+    console.error('Detailed error updating device:', error);
     return NextResponse.json(
-      { error: 'Failed to update device status' },
+      { 
+        error: 'Failed to update device status',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
