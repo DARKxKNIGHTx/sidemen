@@ -17,9 +17,10 @@ interface Device {
 
 interface DeviceListProps {
   devices: Device[];
+  onDeviceUpdate?: (updatedDevices: Device[]) => void;
 }
 
-export default function DeviceList({ devices }: DeviceListProps) {
+export default function DeviceList({ devices, onDeviceUpdate }: DeviceListProps) {
   const [filter, setFilter] = useState('all');
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showDeviceDetails, setShowDeviceDetails] = useState(false);
@@ -44,7 +45,7 @@ export default function DeviceList({ devices }: DeviceListProps) {
           deviceId, 
           status, 
           risk,
-          device // Send the full device data
+          device
         }),
       });
 
@@ -62,13 +63,17 @@ export default function DeviceList({ devices }: DeviceListProps) {
       }
 
       // Update the local devices state with the updated device
-      setLocalDevices(prevDevices => {
-        const newDevices = prevDevices.map(dev => 
-          dev.id === deviceId ? { ...data.device } : dev
-        );
-        console.log('Updated local devices:', newDevices);
-        return newDevices;
-      });
+      const newDevices = localDevices.map(dev => 
+        dev.id === deviceId ? { ...data.device } : dev
+      );
+      
+      console.log('Updated local devices:', newDevices);
+      setLocalDevices(newDevices);
+      
+      // Propagate the update to the parent component
+      if (onDeviceUpdate) {
+        onDeviceUpdate(newDevices);
+      }
 
       return data.device;
     } catch (error) {

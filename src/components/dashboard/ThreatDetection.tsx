@@ -1,4 +1,3 @@
-
 "use client";
 
 import { FiAlertTriangle, FiShield } from 'react-icons/fi';
@@ -20,21 +19,33 @@ interface ThreatDetectionProps {
 }
 
 export default function ThreatDetection({ devices }: ThreatDetectionProps) {
-  const criticalDevices = devices.filter(device => device.status === 'critical');
-  const warningDevices = devices.filter(device => device.status === 'warning');
+  // Calculate threat metrics based on device risks
+  const criticalDevices = devices.filter(device => device.status === 'critical' || device.risk === 'high');
+  const warningDevices = devices.filter(device => device.status === 'warning' || device.risk === 'medium');
+  const normalDevices = devices.filter(device => device.status === 'normal' && device.risk === 'low');
   
-  // In a real application, this data would come from your backend
   const threatData = {
     totalThreats: criticalDevices.length + warningDevices.length,
     criticalThreats: criticalDevices.length,
     warningThreats: warningDevices.length,
-    blockedAttacks: 142,
-    lastAttackTime: "2 hours ago",
+    secureDevices: normalDevices.length,
+    lastScanTime: new Date().toLocaleTimeString(),
     threatTypes: [
-      { type: "MITM Attempts", count: 23 },
-      { type: "Brute Force", count: 45 },
-      { type: "DDoS", count: 12 },
-      { type: "DNS Spoofing", count: 8 },
+      { 
+        type: "Critical Risk Devices", 
+        count: criticalDevices.length,
+        devices: criticalDevices 
+      },
+      { 
+        type: "Warning Level Devices", 
+        count: warningDevices.length,
+        devices: warningDevices 
+      },
+      { 
+        type: "Secure Devices", 
+        count: normalDevices.length,
+        devices: normalDevices 
+      }
     ]
   };
 
@@ -84,8 +95,8 @@ export default function ThreatDetection({ devices }: ThreatDetectionProps) {
             <FiShield className="text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Blocked Attacks</p>
-            <p className="font-semibold text-gray-800 dark:text-white">{threatData.blockedAttacks}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Secure Devices</p>
+            <p className="font-semibold text-gray-800 dark:text-white">{threatData.secureDevices}</p>
           </div>
         </div>
         
@@ -95,13 +106,13 @@ export default function ThreatDetection({ devices }: ThreatDetectionProps) {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Last Scan</p>
-            <p className="font-semibold text-gray-800 dark:text-white">{threatData.lastAttackTime}</p>
+            <p className="font-semibold text-gray-800 dark:text-white">{threatData.lastScanTime}</p>
           </div>
         </div>
       </div>
       
       <div className="mt-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Threat Types</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device Security Status</h3>
         <div className="space-y-2">
           {threatData.threatTypes.map((threat, index) => (
             <div key={index} className="flex justify-between items-center">
@@ -109,8 +120,12 @@ export default function ThreatDetection({ devices }: ThreatDetectionProps) {
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mr-2">
                   <div 
-                    className="bg-blue-600 h-1.5 rounded-full" 
-                    style={{ width: `${(threat.count / threatData.blockedAttacks) * 100}%` }}
+                    className={`h-1.5 rounded-full ${
+                      index === 0 ? 'bg-red-600' : 
+                      index === 1 ? 'bg-yellow-600' : 
+                      'bg-green-600'
+                    }`}
+                    style={{ width: `${(threat.count / devices.length) * 100}%` }}
                   ></div>
                 </div>
                 <span className="text-xs font-medium text-gray-800 dark:text-white">{threat.count}</span>

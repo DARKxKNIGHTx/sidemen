@@ -37,7 +37,7 @@ const mockDevices: Device[] = [{
 
 export default function Dashboard() {
   const router = useRouter();
-  const [devices, setDevices] = useState(mockDevices);
+  const [devices, setDevices] = useState<Device[]>(mockDevices);
   const [activeView, setActiveView] = useState("overview");
   const [isScanning, setIsScanning] = useState(false);
   
@@ -72,6 +72,11 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeviceUpdate = (updatedDevices: Device[]) => {
+    console.log('Updating devices in dashboard:', updatedDevices);
+    setDevices(updatedDevices);
+  };
+
   const handleLogout = () => {
     // Clear localStorage
     localStorage.removeItem('isAuthenticated');
@@ -98,12 +103,12 @@ export default function Dashboard() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            <NetworkStatus />
+            <NetworkStatus devices={devices} />
             <ThreatDetection devices={devices} />
-            <SecurityMetrics />
+            <SecurityMetrics devices={devices} />
           </div>
           
-          <DeviceList devices={devices} />
+          <DeviceList devices={devices} onDeviceUpdate={handleDeviceUpdate} />
         </main>
       </div>
     </div>

@@ -1,126 +1,107 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { FiWifi, FiShield, FiActivity } from 'react-icons/fi';
+import { FiActivity, FiWifi, FiCpu } from 'react-icons/fi';
 
-interface NetworkStats {
-  connectedDevices: number;
-  activeThreats: number;
-  bandwidth: string;
-  bandwidthIn: string;
-  bandwidthOut: string;
-  uptime: string;
-  uptimeRaw: string;
+interface Device {
+  id: string;
+  name: string;
+  ip: string;
+  mac: string;
   status: string;
-  securityScore: number;
+  lastActive: string;
+  type: string;
+  manufacturer: string;
+  risk: string;
 }
 
-export default function NetworkStatus() {
-  const [networkData, setNetworkData] = useState<NetworkStats>({
-    connectedDevices: 0,
-    activeThreats: 0,
-    bandwidth: "0 Mbps",
-    bandwidthIn: "0 Mbps",
-    bandwidthOut: "0 Mbps",
-    uptime: "0%",
-    uptimeRaw: "unknown",
-    status: "Loading",
-    securityScore: 0
-  });
+interface NetworkStatusProps {
+  devices: Device[];
+}
 
-  const fetchNetworkStats = async () => {
-    try {
-      const response = await fetch('/api/network/stats');
-      if (response.ok) {
-        const data = await response.json();
-        setNetworkData(data);
-      } else {
-        console.error('Failed to fetch network stats');
-      }
-    } catch (error) {
-      console.error('Error fetching network stats:', error);
-    }
+export default function NetworkStatus({ devices }: NetworkStatusProps) {
+  // Calculate network metrics based on devices
+  const activeDevices = devices.length;
+  const connectedDevices = devices.filter(device => 
+    new Date(device.lastActive).getTime() > Date.now() - 5 * 60 * 1000 // active in last 5 minutes
+  ).length;
+  
+  const networkData = {
+    networkStatus: activeDevices > 0 ? "Online" : "Offline",
+    activeDevices,
+    connectedDevices,
+    networkLoad: Math.min(100, Math.round((connectedDevices / Math.max(1, activeDevices)) * 100)),
+    lastScanTime: new Date().toLocaleTimeString(),
   };
-
-  useEffect(() => {
-    fetchNetworkStats();
-    // Refresh stats every 30 seconds
-    const interval = setInterval(fetchNetworkStats, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Network Status</h2>
         <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-          networkData.status === "Secure" 
-            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
+          networkData.networkStatus === "Online"
+            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
             : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
         }`}>
-          {networkData.status}
+          {networkData.networkStatus}
         </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
-            <FiWifi className="text-blue-600 dark:text-blue-400" />
+            <FiActivity className="text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Connected Devices</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Active Devices</p>
+            <p className="font-semibold text-gray-800 dark:text-white">{networkData.activeDevices}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+            <FiWifi className="text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Connected</p>
             <p className="font-semibold text-gray-800 dark:text-white">{networkData.connectedDevices}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
-            <FiShield className="text-red-600 dark:text-red-400" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Active Threats</p>
-            <p className="font-semibold text-gray-800 dark:text-white">{networkData.activeThreats}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
-              <FiActivity className="text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Bandwidth</p>
-              <div className="font-semibold text-gray-800 dark:text-white space-y-1">
-                <p>{networkData.bandwidthIn.split('\n').join('\n')}</p>
-                <p>{networkData.bandwidthOut.split('\n').join('\n')}</p>
-              </div>
-            </div>
-          </div>
-        
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
-            <FiActivity className="text-green-600 dark:text-green-400" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Uptime</p>
-            <p className="font-semibold text-gray-800 dark:text-white">{networkData.uptime}</p>
           </div>
         </div>
       </div>
       
-      <div className="mt-4">
-        <div className="flex justify-between mb-1">
-          <span className="text-sm text-gray-600 dark:text-gray-300">Security Score</span>
-          <span className="text-sm font-medium text-gray-800 dark:text-white">{networkData.securityScore}%</span>
+      <div>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Network Load</h3>
+        <div className="flex items-center mb-3">
+          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+            <FiCpu className="text-green-600 dark:text-green-400" />
+          </div>
+          <div className="flex-1">
+            <div className="flex justify-between mb-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Current Load</p>
+              <p className={`text-xs font-medium ${
+                networkData.networkLoad > 80 ? "text-red-600" :
+                networkData.networkLoad > 50 ? "text-yellow-600" :
+                "text-green-600"
+              }`}>{networkData.networkLoad}%</p>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+              <div 
+                className={`h-1.5 rounded-full ${
+                  networkData.networkLoad > 80 ? "bg-red-600" :
+                  networkData.networkLoad > 50 ? "bg-yellow-600" :
+                  "bg-green-600"
+                }`}
+                style={{ width: `${networkData.networkLoad}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-          <div 
-            className="bg-blue-600 h-2 rounded-full" 
-            style={{ width: `${networkData.securityScore}%` }}
-          ></div>
+        
+        <div className="mt-4">
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-500 dark:text-gray-400">Last Scan</span>
+            <span className="text-gray-800 dark:text-white">{networkData.lastScanTime}</span>
+          </div>
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          System uptime: {networkData.uptimeRaw}
-        </p>
       </div>
     </div>
   );
